@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { AuthServices } from '../services/authServices';
 
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
   const authToken = req.session?.authToken;
@@ -81,13 +82,8 @@ export const whoami = async (req: Request, res: Response) => {
     if (!process.env.JWT_SECRET) {
       throw new Error('JWT_SECRET not found');
     }
-    const decodedToken = jwt.verify(authToken, process.env.JWT_SECRET) as {
-      id: number;
-      username: string;
-      role: string;
-      permissions: number;
-      team_id: number;
-    };
+    const authServices = new AuthServices();
+    const decodedToken = authServices.verifyAuthToken(authToken);
     return res.json({
       id: decodedToken.id,
       username: decodedToken.username,

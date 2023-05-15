@@ -1,7 +1,15 @@
 import { UserDetails } from '../models/User';
 import { dbConnection } from '../config/dbConfig';
-// fix any type
-type StoredProcedureResponse = [any, any[]];
+import { StoredProcedureResponse } from '../types/index';
+
+export type InsertUser = {
+  username: string;
+  first_name: string;
+  last_name: string;
+  password: string;
+  phone?: string;
+  email?: string;
+};
 
 export class UserService {
   async findAll() {
@@ -9,7 +17,7 @@ export class UserService {
     return rows;
   }
 
-  async findOne(id: number): Promise<UserDetails> {
+  async findOneById(id: number): Promise<UserDetails> {
     const [rows]: StoredProcedureResponse = await dbConnection.query(
       'CALL sp_get_user_details_by_id(?)',
       [id]
@@ -17,7 +25,32 @@ export class UserService {
     return rows[0][0];
   }
 
-  async insertOne(user: UserDetails): Promise<number> {
+  async findOneByEmail(email: string): Promise<UserDetails> {
+    const [rows]: StoredProcedureResponse = await dbConnection.query(
+      'CALL sp_get_user_details_by_email(?)',
+      [email]
+    );
+    return rows[0][0];
+  }
+
+  async findOneByPhone(phone: string): Promise<UserDetails> {
+    const [rows]: StoredProcedureResponse = await dbConnection.query(
+      'CALL sp_get_user_details_by_phone(?)',
+      [phone]
+    );
+    return rows[0][0];
+  }
+
+  async findOneByUsername(username: string): Promise<UserDetails> {
+    const [rows]: StoredProcedureResponse = await dbConnection.query(
+      'CALL sp_get_user_details_by_username(?)',
+      [username]
+    );
+    console.log(rows);
+    return rows[0][0];
+  }
+
+  async insertOne(user: InsertUser): Promise<number> {
     const [rows]: StoredProcedureResponse = await dbConnection.query(
       'CALL sp_insert_user(?,?,?,?,?,?)',
       [
@@ -29,14 +62,7 @@ export class UserService {
         user.email,
       ]
     );
-    return rows[0].inserted_id;
-  }
-
-  async findOneByUsername(username: string): Promise<UserDetails> {
-    const [rows]: StoredProcedureResponse = await dbConnection.query(
-      'CALL sp_get_user_details_by_username(?)',
-      [username]
-    );
-    return rows[0][0];
+    console.log(rows);
+    return rows;
   }
 }
