@@ -17,42 +17,54 @@ export class UserService {
     return rows;
   }
 
-  async findOneById(id: number): Promise<UserDetails> {
+  async findOneById(id: number): Promise<UserDetails | null> {
     const [rows]: StoredProcedureResponse = await dbConnection.query(
-      'CALL sp_get_user_details_by_id(?)',
+      'SELECT * FROM users WHERE id = ?',
       [id]
     );
-    return rows[0][0];
+    if (rows.length === 0) {
+      return null;
+    }
+    return rows;
   }
 
-  async findOneByEmail(email: string): Promise<UserDetails> {
+  async findOneByEmail(email: string): Promise<UserDetails | null> {
     const [rows]: StoredProcedureResponse = await dbConnection.query(
-      'CALL sp_get_user_details_by_email(?)',
+      'SELECT * FROM users WHERE email = ?',
       [email]
     );
-    return rows[0][0];
+    if (rows.length === 0) {
+      return null;
+    }
+    return rows[0];
   }
 
-  async findOneByPhone(phone: string): Promise<UserDetails> {
+  async findOneByPhone(phone: string): Promise<UserDetails | null> {
     const [rows]: StoredProcedureResponse = await dbConnection.query(
-      'CALL sp_get_user_details_by_phone(?)',
+      'SELECT * FROM users WHERE phone = ?',
       [phone]
     );
-    return rows[0][0];
+    if (rows.length === 0) {
+      return null;
+    }
+    return rows;
   }
 
-  async findOneByUsername(username: string): Promise<UserDetails> {
+  async findOneByUsername(username: string): Promise<UserDetails | null> {
     const [rows]: StoredProcedureResponse = await dbConnection.query(
-      'CALL sp_get_user_details_by_username(?)',
+      'SELECT * FROM users WHERE username = ?',
       [username]
     );
     console.log(rows);
-    return rows[0][0];
+    if (rows.length === 0) {
+      return null;
+    }
+    return rows[0];
   }
 
   async insertOne(user: InsertUser): Promise<number> {
     const [rows]: StoredProcedureResponse = await dbConnection.query(
-      'CALL sp_insert_user(?,?,?,?,?,?)',
+      'INSERT INTO users (username, first_name, last_name, password, phone, email) VALUES (?, ?, ?, ?, ?, ?)',
       [
         user.username,
         user.first_name,
@@ -63,6 +75,10 @@ export class UserService {
       ]
     );
     console.log(rows);
+    if (rows.length === 0) {
+      return 0;
+    }
+
     return rows;
   }
 }

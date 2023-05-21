@@ -8,75 +8,79 @@ const userServices = new UserService();
 
 export const loginUsernamePassword = async (req: Request, res: Response) => {
   const { username, password } = req.body;
+
   if (!username || !password) {
     return res.status(400).send('Username and password are required');
   }
-  const user = await userServices.findOneByUsername(username);
+  try {
+    const user = await userServices.findOneByUsername(username);
 
-  if (!user) {
-    return res.status(404).send('User not found');
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
+
+    if (!process.env.SECRET_KEY) throw new Error('Crypto secret not found');
+
+    const decryptedPw = CryptoJS.AES.decrypt(
+      user.password,
+      process.env.SECRET_KEY || user.password.slice(0, 8).toString()
+    ).toString(CryptoJS.enc.Utf8);
+
+    if (decryptedPw !== password) {
+      return res.status(401).send('Invalid credentials');
+    }
+
+    const authToken = authServices.generateAuthToken(user);
+
+    req.session!.authToken = authToken;
+
+    return res.status(200).json(user);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Internal server error');
   }
-
-  if (!process.env.SECRET_KEY) throw new Error('Crypto secret not found');
-  const decryptedPw = CryptoJS.AES.decrypt(
-    user.password,
-    process.env.SECRET_KEY
-  ).toString(CryptoJS.enc.Utf8);
-
-  if (decryptedPw !== password) {
-    return res.status(401).send('Invalid credentials');
-  }
-
-  const authToken = authServices.generateAuthToken(user);
-
-  req.session!.authToken = authToken;
-
-  const loggedInUser = await authServices.loginUsernamePassword(
-    username,
-    password
-  );
-
-  if (!loggedInUser) {
-    return res.status(401).send('Invalid credentials');
-  }
-
-  return res.status(200).json(loggedInUser);
 };
 
 export const registerUser = async (req: Request, res: Response) => {
-  const userInfo: InsertUser = req.body;
-
-  if (
-    !userInfo.username ||
-    !userInfo.password ||
-    !userInfo.first_name ||
-    !userInfo.last_name
-  ) {
+  const { username, first_name, last_name, phone, email } = req.body;
+  let { password } = req.body;
+  if (!username || !password || !first_name || !last_name || !phone || !email) {
     return res.status(400).send('Missing required fields');
   }
 
-  const userFound = await userServices.findOneByUsername(userInfo.username);
+  const userExist = await userServices.findOneByUsername(username);
 
-  if (userInfo.email) {
-    const emailFound = await userServices.findOneByEmail(userInfo.email);
-    if (emailFound) {
-      return res.status(400).send('Email already exists');
-    }
-  }
-
-  if (userFound) {
+  if (userExist) {
     return res.status(400).send('User already exists');
   }
 
+  const emailExist = await userServices.findOneByEmail(email);
+
+  if (emailExist) {
+    return res.status(400).send('Email already exists');
+  }
+
   if (!process.env.SECRET_KEY) throw new Error('Crypto secret not found');
-  const hash = CryptoJS.AES.encrypt(
-    userInfo.password,
-    process.env.SECRET_KEY
+  let hash = CryptoJS.AES.encrypt(
+    password,
+    process.env.SECRET_KEY || password.splice(0, 8)
   ).toString();
 
-  userInfo.password = hash;
+  password = hash;
 
-  const newUser = await userServices.insertOne(userInfo);
+  try {
+    const newUser = await userServices.insertOne({
+      username,
+      first_name,
+      last_name,
+      password,
+      phone,
+      email,
+    });
 
-  return res.json(newUser);
+    return res.json(newUser);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send('Internal server error');
+  }
 };

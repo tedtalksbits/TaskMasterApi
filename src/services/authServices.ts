@@ -1,7 +1,5 @@
 import { UserDetails } from '../models/User';
 import jwt from 'jsonwebtoken';
-import { StoredProcedureResponse } from '../types/index';
-import { dbConnection } from '../config/dbConfig';
 type JWTOptions = {
   id: number;
   username: string;
@@ -33,16 +31,5 @@ export class AuthServices {
       throw new Error('JWT_SECRET is not defined');
     }
     return jwt.verify(token, process.env.JWT_SECRET) as JWTOptions;
-  }
-
-  async loginUsernamePassword(
-    username: string,
-    password: string
-  ): Promise<UserDetails> {
-    const [rows]: StoredProcedureResponse = await dbConnection.query(
-      'CALL sp_login_username_password(?,?)',
-      [username, password]
-    );
-    return rows[0][0];
   }
 }
