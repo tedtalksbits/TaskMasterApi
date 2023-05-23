@@ -32,9 +32,24 @@ export const loginUsernamePassword = async (req: Request, res: Response) => {
 
     const authToken = authServices.generateAuthToken(user);
 
-    req.session!.authToken = authToken;
+    req.session = {
+      user: {
+        id: user.id,
+        username: user.username,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role,
+        authToken,
+      },
+    };
 
-    return res.status(200).json(user);
+    return res.status(200).json({
+      id: user.id,
+      username: user.username,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      role: user.role,
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).send('Internal server error');
