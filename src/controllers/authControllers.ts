@@ -16,6 +16,8 @@ export const loginUsernamePassword = async (req: Request, res: Response) => {
     const user = await userServices.findOneByUsername(username);
 
     if (!user) {
+      // clear cookie
+      req.session = null;
       return res.status(404).send('User not found');
     }
 
@@ -98,4 +100,9 @@ export const registerUser = async (req: Request, res: Response) => {
     console.log(err);
     return res.status(500).send('Internal server error');
   }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  req.session = null;
+  return res.status(200).send('Logout successful');
 };
