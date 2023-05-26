@@ -72,7 +72,8 @@ export const authTeam = async (req: Request, res: Response) => {
 };
 
 export const whoami = async (req: Request, res: Response) => {
-  const authToken = req.session?.authToken;
+  const authToken = req.session?.user?.authToken;
+  console.log('authToken:', authToken);
 
   if (!authToken) {
     return res.status(401).json({ message: 'Token not provided' });

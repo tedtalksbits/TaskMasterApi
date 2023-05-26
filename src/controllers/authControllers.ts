@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthServices } from '../services/authServices';
 import { InsertUser, UserService } from '../services/userServices';
 import CryptoJS from 'crypto-js';
+import { whoami } from 'src/middlewares/authMiddleware';
 
 const authServices = new AuthServices();
 const userServices = new UserService();
@@ -10,7 +11,9 @@ export const loginUsernamePassword = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).send('Username and password are required');
+    return res.status(400).json({
+      message: 'Missing required fields',
+    });
   }
   try {
     const user = await userServices.findOneByUsername(username);
@@ -18,7 +21,9 @@ export const loginUsernamePassword = async (req: Request, res: Response) => {
     if (!user) {
       // clear cookie
       req.session = null;
-      return res.status(404).send('User not found');
+      return res.status(404).json({
+        message: 'User not found',
+      });
     }
 
     if (!process.env.SECRET_KEY) throw new Error('Crypto secret not found');
@@ -29,7 +34,9 @@ export const loginUsernamePassword = async (req: Request, res: Response) => {
     ).toString(CryptoJS.enc.Utf8);
 
     if (decryptedPw !== password) {
-      return res.status(401).send('Invalid credentials');
+      return res.status(401).json({
+        message: 'Invalid credentials',
+      });
     }
 
     const authToken = authServices.generateAuthToken(user);
@@ -54,7 +61,9 @@ export const loginUsernamePassword = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.log(err);
-    return res.status(500).send('Internal server error');
+    return res.status(500).json({
+      message: 'Internal server error',
+    });
   }
 };
 
